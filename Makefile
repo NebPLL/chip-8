@@ -18,8 +18,10 @@ $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+ROM ?= resources/IBM_Logo.ch8
+
 run: $(TARGET)
-	./$(TARGET)
+	./$(TARGET) $(ROM)
 
 clean:
 	rm -rf $(BUILD_DIR)
