@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+const int keymap[] = {KEY_X,    KEY_ONE, KEY_TWO, KEY_THREE, KEY_Q, KEY_W,
+                      KEY_E,    KEY_A,   KEY_S,   KEY_D,     KEY_Z, KEY_C,
+                      KEY_FOUR, KEY_R,   KEY_F,   KEY_V};
+
 int main(void) {
   srand(time(NULL));
 
@@ -97,13 +101,15 @@ int main(void) {
 
   while (!WindowShouldClose()) {
 
-    if (!IsSoundPlaying(beep_sound) && c.sound_timer > 0) {
+    if (c.sound_timer > 0 && !IsSoundPlaying(beep_sound)) {
       PlaySound(beep_sound);
-    } else {
+    } else if (c.sound_timer == 0 && IsSoundPlaying(beep_sound)) {
       StopSound(beep_sound);
     }
 
-    update_keys();
+    for (int i = 0; i < 16; i++) {
+      c.keys[i] = IsKeyDown(keymap[i]);
+    }
 
     for (int i = 0; i < cycles_per_frame; i++) {
       exec_command(&c);
@@ -133,6 +139,7 @@ int main(void) {
 
   UnloadSound(beep_sound);
   CloseAudioDevice();
+  CloseWindow();
 
   return 0;
 }

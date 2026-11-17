@@ -1,22 +1,6 @@
 #include "headers/chip8.h"
-#include "headers/fn_0.h"
-#include "headers/fn_1.h"
-#include "headers/fn_2.h"
-#include "headers/fn_3.h"
-#include "headers/fn_4.h"
-#include "headers/fn_5.h"
-#include "headers/fn_6.h"
-#include "headers/fn_7.h"
-#include "headers/fn_8.h"
-#include "headers/fn_9.h"
-#include "headers/fn_A.h"
-#include "headers/fn_B.h"
-#include "headers/fn_C.h"
-#include "headers/fn_D.h"
-#include "headers/fn_E.h"
-#include "headers/fn_F.h"
+#include "headers/instructions.h"
 
-#include <raylib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -30,20 +14,6 @@ static const uint8_t fontset[80] = {
     0x10, 0xF0, 0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0,
     0xF0, 0x80, 0x80, 0x80, 0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80,
     0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80};
-
-const int keymap[] = {KEY_X,    KEY_ONE, KEY_TWO, KEY_THREE, KEY_Q, KEY_W,
-                      KEY_E,    KEY_A,   KEY_S,   KEY_D,     KEY_Z, KEY_C,
-                      KEY_FOUR, KEY_R,   KEY_F,   KEY_V};
-
-bool keys[16];
-
-bool *getKeys() { return keys; }
-
-void update_keys() {
-  for (int i = 0; i < 16; i++) {
-    keys[i] = IsKeyDown(keymap[i]);
-  }
-}
 
 void init_chip8(Chip8 *c) {
   memset(c, 0, sizeof(*c));
@@ -69,89 +39,194 @@ void exec_command(Chip8 *c) {
 
   switch ((opcode & 0xF000) >> 12) {
 
-  case 0x0:
-    decode_fn0(c, opcode);
+  case 0x0: {
 
+    switch (opcode) {
+    case 0x00E0:
+      op_00E0_cls(c);
+
+      break;
+
+    case 0x00EE:
+      op_00EE_ret(c);
+
+      break;
+
+    default:
+      printf("Opencode not found (1):%04X\n", opcode);
+    }
     break;
+  }
 
   case 0x1:
 
-    decode_fn1(c, opcode, sliced_opcode);
+    op_1NNN_jump(c, sliced_opcode);
 
     break;
 
   case 0x2:
 
-    decode_fn2(c, opcode, sliced_opcode);
+    op_2NNN_call(c, sliced_opcode);
 
     break;
 
   case 0x3:
-    decode_fn3(c, opcode, sliced_opcode);
+
+    op_3XNN_skip_eq(c, sliced_opcode);
 
     break;
 
   case 0x4:
-    decode_fn4(c, opcode, sliced_opcode);
+    op_4XNN_skip_neq(c, sliced_opcode);
 
     break;
 
   case 0x5:
-    decode_fn5(c, opcode, sliced_opcode);
+    op_5XY0_skip_eq_reg(c, sliced_opcode);
 
     break;
 
   case 0x6:
-    decode_fn6(c, opcode, sliced_opcode);
+    op_6XNN_set(c, sliced_opcode);
 
     break;
 
   case 0x7:
-    decode_fn7(c, opcode, sliced_opcode);
+    op_7XNN_add(c, sliced_opcode);
 
     break;
 
-  case 0x8:
-    decode_fn8(c, opcode, sliced_opcode);
+  case 0x8: {
+    switch (opcode & 0x000F) {
+    case 0:
+      op_8XY0_copy(c, sliced_opcode);
+      break;
 
+    case 1:
+      op_8XY1_or(c, sliced_opcode);
+      break;
+
+    case 2:
+      op_8XY2_and(c, sliced_opcode);
+      break;
+    case 3:
+      op_8XY3_xor(c, sliced_opcode);
+      break;
+
+    case 4:
+      op_8XY4_add(c, sliced_opcode);
+      break;
+
+    case 5:
+      op_8XY5_sub(c, sliced_opcode);
+      break;
+
+    case 0x6:
+      op_8XY6_shr(c, sliced_opcode);
+      break;
+    case 7:
+      op_8XY7_subn(c, sliced_opcode);
+      break;
+
+    case 0xE: {
+      op_8XYE_shl(c, sliced_opcode);
+      break;
+    }
+
+    default:
+      printf("Opencode not found (8):%04X\n", opcode);
+    }
     break;
+  }
 
   case 0x9:
-    decode_fn9(c, opcode, sliced_opcode);
+    op_9XY0_skip_neq_reg(c, sliced_opcode);
 
     break;
 
   case 0xA:
-    decode_fnA(c, opcode, sliced_opcode);
+    op_ANNN_set_i(c, sliced_opcode);
 
     break;
 
   case 0xB:
-    decode_fnB(c, opcode, sliced_opcode);
+    op_BXNN_jump_vx(c, sliced_opcode);
 
     break;
 
   case 0xC:
-    decode_fnC(c, opcode, sliced_opcode);
+    op_CXNN_rand(c, sliced_opcode);
 
     break;
 
   case 0xD:
-    decode_fnD(c, opcode, sliced_opcode);
+    op_DXYN_draw(c, sliced_opcode);
 
     break;
 
-  case 0xE:
-    decode_fnE(c, opcode, sliced_opcode);
+  case 0xE: {
 
+    switch (opcode & 0x00FF) {
+    case 0x9E:
+      op_EX9E_skip_key(c, sliced_opcode);
+
+      break;
+
+    case 0xA1:
+      op_EXA1_skip_nkey(c, sliced_opcode);
+
+      break;
+
+    default:
+      printf("Opencode not found (E):%04X\n", opcode);
+    }
     break;
+  }
 
-  case 0xF:
-    decode_fnF(c, opcode, sliced_opcode);
+  case 0xF: {
+    switch (opcode & 0x00FF) {
+    case 0x0007:
+      op_FX07_get_delay(c, sliced_opcode);
+      break;
 
+    case 0x0015:
+      op_FX15_set_delay(c, sliced_opcode);
+      break;
+
+    case 0x0018:
+      op_FX18_set_sound(c, sliced_opcode);
+      break;
+
+    case 0x001E:
+      op_FX1E_add_i(c, sliced_opcode);
+      break;
+
+    case 0x000A:
+      op_FX0A_wait_key(c, sliced_opcode);
+      break;
+
+    case 0x0029:
+      op_FX29_font(c, sliced_opcode);
+      break;
+
+    case 0x0033:
+      op_FX33_bcd(c, sliced_opcode);
+      break;
+
+    case 0x0055:
+      op_FX55_store(c, sliced_opcode);
+
+      break;
+
+    case 0x0065:
+      op_FX65_load(c, sliced_opcode);
+
+      break;
+
+    default:
+      printf("Opencode not found (F):%04X\n", opcode);
+    }
     break;
-
-  default:
-    printf("Opencode not found (0):%i\n", opcode);
+  }
   }
 }

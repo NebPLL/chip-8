@@ -1,7 +1,6 @@
 #ifndef CHIP8_H
 #define CHIP8_H
 
-#include <raylib.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -42,9 +41,6 @@ typedef struct {
 void init_chip8(Chip8 *c);
 void load_rom(Chip8 *c, uint8_t rom[], size_t rom_size);
 
-bool *getKeys();
-
-void update_keys();
 void exec_command(Chip8 *c);
 
 #endif
