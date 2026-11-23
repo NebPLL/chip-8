@@ -2,7 +2,7 @@
 
 A CHIP-8 interpreter written in C11, using [raylib](https://www.raylib.com/) for graphics, input and sound.
 
-<img width="638" height="320" alt="image" src="https://github.com/user-attachments/assets/d5224718-90d0-4c49-8456-32e07b1ea23e" />
+<img width="638" height="320" alt="Brix running in the CHIP-8 emulator" src="https://github.com/user-attachments/assets/d5224718-90d0-4c49-8456-32e07b1ea23e" />
 
 
 ## Features
