@@ -34,7 +34,7 @@ make clean    # removes the build directory
 Or through `make`:
 
 ```sh
-make run ROM=resources/Breakout.ch8 SPEED=15
+make run ROM=resources/Breakout.ch8 SPEED=15 DEBUG=--debug
 ```
 
 The instructions per frame (1–1000) control the emulation speed. Around 11 (~660 Hz) works well for most games. Run the emulator from the project root so it can find `resources/beep.wav`. A few sample ROMs are included in `resources/`.
