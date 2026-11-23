@@ -12,17 +12,18 @@ TARGET = $(BUILD_DIR)/main
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
-	@echo "Neu gebaut."
+	@echo "New Build."
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ROM ?= resources/IBM_Logo.ch8
-SPEED ?= 11 
+SPEED ?= 11
+DEBUG ?=
 
 run: $(TARGET)
-	./$(TARGET) $(ROM) $(SPEED)
+	./$(TARGET) $(ROM) $(SPEED) $(DEBUG)
 
 clean:
 	rm -rf $(BUILD_DIR)

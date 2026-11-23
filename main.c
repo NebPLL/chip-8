@@ -9,15 +9,30 @@
 #include <string.h>
 #include <time.h>
 
+const int keymap[] = {KEY_X,    KEY_ONE, KEY_TWO, KEY_THREE, KEY_Q, KEY_W,
+                      KEY_E,    KEY_A,   KEY_S,   KEY_D,     KEY_Z, KEY_C,
+                      KEY_FOUR, KEY_R,   KEY_F,   KEY_V};
+
 size_t read_rom(const char *path, uint8_t *buffer, size_t max_size);
 
 static bool parse_int(const char *str, long min, long max, int *out);
 
 int main(int argc, char *argv[]) {
 
-  if (argc != 3) {
+  bool debug = false;
+
+  if (argc != 4 && argc != 3) {
     fprintf(stderr, "Not enought arguments.");
     return EXIT_FAILURE;
+  }
+
+  if (argc == 4) {
+    if (strcmp(argv[3], "--debug") == 0) {
+      debug = true;
+    } else {
+      fprintf(stderr, "Unknown option: %s\n", argv[3]);
+      return EXIT_FAILURE;
+    }
   }
 
   srand(time(NULL));
@@ -58,7 +73,10 @@ int main(int argc, char *argv[]) {
 
   while (!WindowShouldClose()) {
 
-    show_debug(&c);
+    if (debug) {
+
+      show_debug(&c);
+    }
 
     if (c.sound_timer > 0 && !IsSoundPlaying(beep_sound)) {
       PlaySound(beep_sound);

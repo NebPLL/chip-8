@@ -1,5 +1,6 @@
 #include "headers/instructions.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 void op_00E0_cls(Chip8 *c) {
@@ -11,6 +12,10 @@ void op_00E0_cls(Chip8 *c) {
 }
 
 void op_00EE_ret(Chip8 *c) {
+  if (c->sp == 0) {
+    fprintf(stderr, "Stack underflow at 0x%03X\n", c->pc - 2);
+    return;
+  }
   c->sp--;
   c->pc = c->stack[c->sp];
 }
@@ -20,9 +25,12 @@ void op_1NNN_jump(Chip8 *c, sliced_opcode sliced_opcode) {
 }
 
 void op_2NNN_call(Chip8 *c, sliced_opcode sliced_opcode) {
+  if (c->sp >= STACK_SIZE) {
+    fprintf(stderr, "Stack overflow at 0x%03X\n", c->pc - 2);
+    return;
+  }
   c->stack[c->sp] = c->pc;
   c->sp++;
-
   c->pc = sliced_opcode.nnn;
 }
 
@@ -147,7 +155,7 @@ void op_DXYN_draw(Chip8 *c, sliced_opcode sliced_opcode) {
   for (int row = 0; row < n; row++) {
     if (y + row >= SCREEN_H)
       break;
-    uint8_t sprite = c->memory[c->I + row];
+    uint8_t sprite = c->memory[(c->I + row) & 0xFFF];
 
     for (int col = 0; col < 8; col++) {
       if (x + col >= SCREEN_W)
@@ -191,16 +199,16 @@ void op_FX1E_add_i(Chip8 *c, sliced_opcode sliced_opcode) {
 }
 
 void op_FX0A_wait_key(Chip8 *c, sliced_opcode sliced_opcode) {
-  bool erfolg = false;
+  bool success = false;
   const int AMOUNTOFKEYS = 16;
   for (int i = 0; i < AMOUNTOFKEYS; i++) {
     if (c->keys[i]) {
       c->V[sliced_opcode.x] = i;
-      erfolg = true;
+      success = true;
     }
   }
 
-  if (!erfolg) {
+  if (!success) {
     c->pc -= 2;
   }
 }
@@ -212,21 +220,21 @@ void op_FX29_font(Chip8 *c, sliced_opcode sliced_opcode) {
 void op_FX33_bcd(Chip8 *c, sliced_opcode sliced_opcode) {
   uint8_t x = c->V[sliced_opcode.x];
 
-  c->memory[c->I] = x / 100;
-  c->memory[c->I + 1] = x / 10 % 10;
-  c->memory[c->I + 2] = x % 10;
+  c->memory[c->I & 0xFFF] = x / 100;
+  c->memory[(c->I + 1) & 0xFFF] = x / 10 % 10;
+  c->memory[(c->I + 2) & 0xFFF] = x % 10;
 }
 
 void op_FX55_store(Chip8 *c, sliced_opcode sliced_opcode) {
 
   for (int i = 0; i <= sliced_opcode.x; i++) {
-    c->memory[c->I + i] = c->V[i];
+    c->memory[(c->I + i) & 0xFFF] = c->V[i];
   }
 }
 
 void op_FX65_load(Chip8 *c, sliced_opcode sliced_opcode) {
 
   for (int i = 0; i <= sliced_opcode.x; i++) {
-    c->V[i] = c->memory[c->I + i];
+    c->V[i] = c->memory[(c->I + i) & 0xFFF];
   }
 }

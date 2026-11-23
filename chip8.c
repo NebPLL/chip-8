@@ -26,7 +26,8 @@ void load_rom(Chip8 *c, uint8_t rom[], size_t rom_size) {
 }
 
 void exec_command(Chip8 *c) {
-  uint16_t opcode = (c->memory[c->pc] << 8) | c->memory[c->pc + 1];
+  uint16_t opcode =
+      (c->memory[c->pc & 0xFFF] << 8) | c->memory[(c->pc + 1) & 0xFFF];
   c->pc += 2;
 
   uint8_t x = (opcode & 0x0F00) >> 8;
@@ -53,7 +54,7 @@ void exec_command(Chip8 *c) {
       break;
 
     default:
-      printf("Opencode not found (1):%04X\n", opcode);
+      printf("Opcode not found (1):%04X\n", opcode);
     }
     break;
   }
@@ -134,7 +135,7 @@ void exec_command(Chip8 *c) {
     }
 
     default:
-      printf("Opencode not found (8):%04X\n", opcode);
+      printf("Opcode not found (8):%04X\n", opcode);
     }
     break;
   }
@@ -178,7 +179,7 @@ void exec_command(Chip8 *c) {
       break;
 
     default:
-      printf("Opencode not found (E):%04X\n", opcode);
+      printf("Opcode not found (E):%04X\n", opcode);
     }
     break;
   }
@@ -224,7 +225,7 @@ void exec_command(Chip8 *c) {
       break;
 
     default:
-      printf("Opencode not found (F):%04X\n", opcode);
+      printf("Opcode not found (F):%04X\n", opcode);
     }
     break;
   }

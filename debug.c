@@ -22,7 +22,8 @@ void start_debug() { printf("\033[?25l"); }
 void show_debug(Chip8 *c) {
   debug_lines = 0;
 
-  uint16_t opcode = (c->memory[c->pc] << 8) | c->memory[c->pc + 1];
+  uint16_t opcode =
+      (c->memory[c->pc & 0xFFF] << 8) | c->memory[(c->pc + 1) & 0xFFF];
 
   char code_buf[36];
   disassemble_opcode(opcode, code_buf, sizeof(code_buf));

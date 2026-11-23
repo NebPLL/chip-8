@@ -1,5 +1,5 @@
-#ifndef INSTRUCTIONS_H
-#define INSTRUCTIONS_H
+#ifndef DEBUG_H
+#define DEBUG_H
 
 #include "chip8.h"
 
