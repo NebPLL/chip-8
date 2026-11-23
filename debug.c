@@ -1,4 +1,5 @@
 #include "headers/debug.h"
+#include "headers/disasm.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,9 +22,14 @@ void start_debug() { printf("\033[?25l"); }
 void show_debug(Chip8 *c) {
   debug_lines = 0;
 
-  DBG_MESSAGE("PC: 0x%03X               I:  0x%03X", c->pc, c->I);
   uint16_t opcode = (c->memory[c->pc] << 8) | c->memory[c->pc + 1];
-  DBG_MESSAGE("opcode: 0x%04X", opcode);
+
+  char code_buf[36];
+  disassemble_opcode(opcode, code_buf, sizeof(code_buf));
+
+  DBG_MESSAGE("PC: 0x%03X               I:  0x%03X", c->pc, c->I);
+  // DBG_MESSAGE("opcode: 0x%04X", opcode);
+  DBG_MESSAGE("opcode: %s", code_buf);
 
   DBG_MESSAGE("Delay Timer: %03i        Sound Timer:  %03i", c->delay_timer,
               c->sound_timer);
@@ -52,11 +58,13 @@ void show_debug(Chip8 *c) {
 
   DBG_MESSAGE("-------------------------------");
 
-  for (int y = 0; y < 4; y++) {
-    for (int x = 0; x < 4; x++) {
-      uint8_t key = keypad_layout[y][x];
-      DBG_MESSAGE("K%X: %s", key, c->keys[key] ? "True" : "False");
-    }
+  for (int i = 0; i < 8; i++) {
+    uint8_t a = keypad_layout[i / 4][i % 4];
+    uint8_t b = keypad_layout[(i + 8) / 4][(i + 8) % 4];
+
+    DBG_MESSAGE("K%X: %-5s              K%X: %s", a,
+                c->keys[a] ? "True" : "False", b,
+                c->keys[b] ? "True" : "False");
   }
 
   printf("\033[%dA", debug_lines);
