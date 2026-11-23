@@ -1,94 +1,49 @@
 #include "headers/chip8.h"
-#include "tests_roms/chip8_logo_rom.h"
-#include "tests_roms/font_rom.h"
-#include "tests_roms/ibm_rom.h"
+#include "headers/debug.h"
 
 #include <raylib.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-const int keymap[] = {KEY_X,    KEY_ONE, KEY_TWO, KEY_THREE, KEY_Q, KEY_W,
-                      KEY_E,    KEY_A,   KEY_S,   KEY_D,     KEY_Z, KEY_C,
-                      KEY_FOUR, KEY_R,   KEY_F,   KEY_V};
+size_t read_rom(const char *path, uint8_t *buffer, size_t max_size);
 
-int main(void) {
+static bool parse_int(const char *str, long min, long max, int *out);
+
+int main(int argc, char *argv[]) {
+
+  if (argc != 3) {
+    fprintf(stderr, "Not enought arguments.");
+    return EXIT_FAILURE;
+  }
+
   srand(time(NULL));
 
   Chip8 c;
   init_chip8(&c);
-  uint8_t MAZE_ROM[] = {
-      // --- Start ---
-      0x00,
-      0xE0, // 0x200: 00E0  Bildschirm löschen
-      0x60,
-      0x00, // 0x202: 6000  V0 = 0   x
-      0x61,
-      0x00, // 0x204: 6100  V1 = 0   y
 
-      // --- Zufällige Kachel wählen ---
-      0xA2,
-      0x2C, // 0x206: A22C  I = Sprite "/"
-      0xC2,
-      0x01, // 0x208: C201  V2 = zufällig 0 oder 1
-      0x32,
-      0x00, // 0x20A: 3200  V2 == 0 -> nächste überspringen
-      0xA2,
-      0x30, // 0x20C: A230  I = Sprite "\"
-      0xD0,
-      0x14, // 0x20E: D014  Kachel zeichnen (4 Zeilen)
+  const int MAX_ROM_SIZE = MEM_SIZE - PROGRAM_START;
 
-      // --- Kurz warten, damit man das Aufbauen sieht ---
-      0x63,
-      0x01, // 0x210: 6301  V3 = 1
-      0xF3,
-      0x15, // 0x212: F315  Delay-Timer = 1
-      0xF3,
-      0x07, // 0x214: F307  V3 = Delay-Timer
-      0x33,
-      0x00, // 0x216: 3300  V3 == 0 -> nächste überspringen
-      0x12,
-      0x14, // 0x218: 1214  zurück zu 0x214
+  uint8_t ibm_rom[MAX_ROM_SIZE];
 
-      // --- Nächste Spalte ---
-      0x70,
-      0x04, // 0x21A: 7004  V0 += 4
-      0x30,
-      0x40, // 0x21C: 3040  V0 == 64 -> nächste überspringen
-      0x12,
-      0x06, // 0x21E: 1206  nächste Kachel
+  size_t ibm_rom_size = read_rom(argv[1], ibm_rom, MAX_ROM_SIZE);
 
-      // --- Nächste Zeile ---
-      0x60,
-      0x00, // 0x220: 6000  V0 = 0
-      0x71,
-      0x04, // 0x222: 7104  V1 += 4
-      0x31,
-      0x20, // 0x224: 3120  V1 == 32 -> nächste überspringen
-      0x12,
-      0x06, // 0x226: 1206  nächste Kachel
+  if (ibm_rom_size == 0) {
+    return EXIT_FAILURE;
+  }
 
-      // --- Fertig: auf Taste warten, dann neu ---
-      0xF2,
-      0x0A, // 0x228: F20A  auf Taste warten
-      0x12,
-      0x00, // 0x22A: 1200  neu starten
+  load_rom(&c, ibm_rom, ibm_rom_size);
 
-      // --- Sprites (je 4 Zeilen) ---
-      0x10,
-      0x20,
-      0x40,
-      0x80, // 0x22C: Sprite "/"
+  int ipf; // Instructions per Frame
 
-      0x80,
-      0x40,
-      0x20,
-      0x10, // 0x230: Sprite "\"
-  };
-
-  load_rom(&c, MAZE_ROM, sizeof(MAZE_ROM));
-
-  int cycles_per_frame = 11;
+  if (argc < 2 || !parse_int(argv[2], 1, 1000, &ipf)) {
+    fprintf(stderr, "Benutzung: %s <instruktionen pro frame (1-1000)>\n",
+            argv[0]);
+    return 1;
+  }
 
   SetTraceLogLevel(LOG_WARNING);
   InitWindow(SCREEN_W * 10, SCREEN_H * 10, "Chip-8");
@@ -99,7 +54,11 @@ int main(void) {
 
   SetTargetFPS(60);
 
+  start_debug();
+
   while (!WindowShouldClose()) {
+
+    show_debug(&c);
 
     if (c.sound_timer > 0 && !IsSoundPlaying(beep_sound)) {
       PlaySound(beep_sound);
@@ -111,7 +70,7 @@ int main(void) {
       c.keys[i] = IsKeyDown(keymap[i]);
     }
 
-    for (int i = 0; i < cycles_per_frame; i++) {
+    for (int i = 0; i < ipf; i++) {
       exec_command(&c);
     }
 
@@ -137,9 +96,47 @@ int main(void) {
     }
   }
 
+  cleanup_debug();
+
   UnloadSound(beep_sound);
   CloseAudioDevice();
   CloseWindow();
 
   return 0;
+}
+
+size_t read_rom(const char *path, uint8_t *buffer, size_t max_size) {
+  FILE *rom = fopen(path, "rb");
+  if (rom == NULL) {
+    perror(path);
+
+    return 0;
+  }
+
+  size_t rom_size = fread(buffer, 1, max_size, rom);
+
+  if (ferror(rom)) {
+    fprintf(stderr, "%s: read error\n", path);
+    rom_size = 0;
+  } else if (rom_size == 0) {
+    fprintf(stderr, "%s: file is empty\n", path);
+  } else if (rom_size == max_size && fgetc(rom) != EOF) {
+    fprintf(stderr, "%s: ROM is too large (max %zu bytes)\n", path, max_size);
+    rom_size = 0;
+  }
+
+  fclose(rom);
+
+  return rom_size;
+}
+
+static bool parse_int(const char *str, long min, long max, int *out) {
+  char *end;
+  long value = strtol(str, &end, 0);
+
+  if (end == str || *end != '\0' || value < min || value > max)
+    return false;
+
+  *out = (int)value;
+  return true;
 }

@@ -29,11 +29,11 @@ void exec_command(Chip8 *c) {
   uint16_t opcode = (c->memory[c->pc] << 8) | c->memory[c->pc + 1];
   c->pc += 2;
 
-  uint8_t x = (opcode & 0x0F00) >> 8; // zweites Nibble
-  uint8_t y = (opcode & 0x00F0) >> 4; // drittes Nibble
-  uint8_t n = opcode & 0x000F;        // letztes Nibble
-  uint8_t nn = opcode & 0x00FF;       // letztes Byte
-  uint16_t nnn = opcode & 0x0FFF;     // Adresse
+  uint8_t x = (opcode & 0x0F00) >> 8;
+  uint8_t y = (opcode & 0x00F0) >> 4;
+  uint8_t n = opcode & 0x000F;
+  uint8_t nn = opcode & 0x00FF;
+  uint16_t nnn = opcode & 0x0FFF;
 
   sliced_opcode sliced_opcode = {.x = x, .y = y, .n = n, .nn = nn, .nnn = nnn};
 
